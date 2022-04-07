@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Filename : check_ospf.pl
-# Date     : 2022-03-24
+# Date     : 2022-04-07
 
 use warnings;
 use strict;
@@ -123,20 +123,20 @@ sub verb {
 sub check_options {
   Getopt::Long::Configure ("bundling");
   GetOptions(
-    'v'   => \$o_verb,          'verbose'       => \$o_verb,
-    'h'   => \$o_help,          'help'          => \$o_help,
-    'H:s' => \$o_host,          'hostname:s'    => \$o_host,
-    'p:i' => \$o_port,          'port:i'        => \$o_port,
-    'C:s' => \$o_community,     'community:s'   => \$o_community,
-    'l:s' => \$o_login,         'login:s'       => \$o_login,
-    'x:s' => \$o_passwd,        'passwd:s'      => \$o_passwd,
-    'X:s' => \$o_privpass,      'privpass:s'    => \$o_privpass,
-    'L:s' => \$v3protocols,     'protocols:s'   => \$v3protocols,   
-    't:i' => \$o_timeout,       'timeout:i'     => \$o_timeout,
-    'V'   => \$o_version,       'version'       => \$o_version,
-    '6'   => \$o_domain,        'use-ipv6'      => \$o_domain,
-    '1'   => \$o_version1,      'v1'            => \$o_version1,
-    '2'   => \$o_version2,      'v2c'           => \$o_version2,
+    'v'   => \$o_verb,		'verbose'	=> \$o_verb,
+    'h'   => \$o_help,		'help'		=> \$o_help,
+    'H:s' => \$o_host,		'hostname:s'	=> \$o_host,
+    'p:i' => \$o_port,		'port:i'	=> \$o_port,
+    'C:s' => \$o_community,	'community:s'	=> \$o_community,
+    'l:s' => \$o_login,		'login:s'	=> \$o_login,
+    'x:s' => \$o_passwd,	'passwd:s'	=> \$o_passwd,
+    'X:s' => \$o_privpass,	'privpass:s'	=> \$o_privpass,
+    'L:s' => \$v3protocols,	'protocols:s'	=> \$v3protocols,   
+    't:i' => \$o_timeout,	'timeout:i'	=> \$o_timeout,
+    'V'   => \$o_version,	'version'	=> \$o_version,
+    '6'   => \$o_domain,	'use-ipv6'	=> \$o_domain,
+    '1'   => \$o_version1,	'v1'		=> \$o_version1,
+    '2'   => \$o_version2,	'v2c'		=> \$o_version2,
   );
 
 
@@ -305,7 +305,7 @@ my $count_OK = 0;
 my $count_WARN = 0;
 my $count_CRIT = 0;
 my $count_UNKN = 0;
-
+my %perfcount;
 
 # Get SNMP OSPF neighbor state table
 my $result = $session->get_table($OID_ospfNbrState);
@@ -350,6 +350,14 @@ foreach my $neighbor (keys %ospfState) {
   $output .= "$neighbor\t$ospfNbrState{$state}\n";
 }
 
+foreach my $state (keys %ospfNbrState) {
+  $perfcount{$state} = 0;
+}
+foreach my $neighbor (keys %ospfState) {
+  my $state = $ospfState{$neighbor};
+  $perfcount{$state}++;
+}
+
 my $status = "";
 $status .= "1 neighbor CRITICAL, " if ($count_CRIT == 1);
 $status .= "1 neighbor WARNING, " if ($count_WARN == 1);
@@ -363,6 +371,10 @@ if ($status ne "") {
   chop $status;
   chop $status;
   $status = ": $status.";
+  $status .= " |";
+  foreach my $state (sort keys %perfcount) {
+    $status .= " ".$ospfNbrState{$state}."=".$perfcount{$state};
+  }
 }
 
 if ($final_status == 3) {
@@ -382,3 +394,4 @@ if ($final_status == 1) {
 
 print "OK",$status,"\n",$output;
 exit $ERRORS{"OK"};
+
