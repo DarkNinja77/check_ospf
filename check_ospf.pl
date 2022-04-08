@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Filename : check_ospf.pl
-# Date     : 2022-04-07
+# Date     : 2022-04-08
 
 use warnings;
 use strict;
@@ -311,9 +311,15 @@ my %perfcount;
 my $result = $session->get_table($OID_ospfNbrState);
 
 if (!defined $result) {
-   printf "ERROR: %s\n", $session->error();
-   $session->close();
-   exit $ERRORS{"UNKNOWN"};
+  if ($session->error() =~ /table is empty/) {
+    printf "WARNING: 0 neighbors.\n";
+    $session->close();
+    exit $ERRORS{"WARNING"};
+  } else {
+    printf "ERROR: %s\n", $session->error();
+    $session->close();
+    exit $ERRORS{"UNKNOWN"};
+  }
 }
 
 # Clear the SNMP Transport Domain and any errors associated with the object.
