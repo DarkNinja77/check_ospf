@@ -312,7 +312,11 @@ my $result = $session->get_table($OID_ospfNbrState);
 
 if (!defined $result) {
   if ($session->error() =~ /table is empty/) {
-    printf "WARNING: 0 neighbors.\n";
+    $output = "WARNING: 0 neighbors. | ";
+    foreach my $state (sort keys %ospfNbrState) {
+      $output .= " ".$ospfNbrState{$state}."=0";
+    }
+    printf "$output\n";
     $session->close();
     exit $ERRORS{"WARNING"};
   } else {
